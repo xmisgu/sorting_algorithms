@@ -291,6 +291,8 @@ private:
 	unsigned int arr_size;
 	unsigned int num_of_elements;
 	T* array;
+
+	
 public:
 	DynamicArr() {
 		arr_size = 1; //array size
@@ -299,6 +301,7 @@ public:
 	}
 
 	DynamicArr(const DynamicArr& new_arr) {
+		delete_all();
 		array = new_arr.array;
 		num_of_elements = new_arr.num_of_elements;
 		arr_size = new_arr.arr_size;
@@ -306,6 +309,11 @@ public:
 
 	~DynamicArr() {
 		delete[] array;
+	}
+
+	void swap_array(T* new_arr,unsigned int size) {
+		array = new_arr;
+		num_of_elements = size;
 	}
 
 	unsigned int size() {
@@ -406,7 +414,7 @@ template <typename D>
 class BinaryHeap {
 public:
 	BinaryHeap(){}
-	BinaryHeap(DynamicArr<D>& array, int size, bool method) {
+	BinaryHeap(D* array, int size, bool method) {
 		
 		for (int i = 0; i < size; i++) {
 			arr.add_element(array[i]);
@@ -419,8 +427,6 @@ public:
 		else {
 			naprawa_top_down();
 		}
-
-		std::cout << arr.display_array(1000) << std::endl;
 	}
 
 	void add(const D& data) {
@@ -451,11 +457,12 @@ public:
 	}
 
 	void sort() {
-		DynamicArr<D> tmp_array;
 		int size = arr.size();
+		D* tmp_arr = new D[size];
 		for (int i = 0; i < size; i++) {
-			tmp_array.add_element(delete_max());
+			tmp_arr[i] = delete_max();
 		}
+		arr.swap_array(tmp_arr, size);
 	}
 
 	std::string display(unsigned int n = 0) {
@@ -513,6 +520,7 @@ void counting_sort(int *arr, unsigned int size, int range) {
         }
         current_index += counter[i];
     }
+	delete[] counter;
 }
 
 template <typename T>
@@ -535,6 +543,8 @@ void bucket_sort(T* arr, unsigned int size, double range) {
         }
         current_index += buckets[i].get_size();
     }
+	buckets.resize(0);
+	buckets.shrink_to_fit();
 }
 void bucket_sort(int *arr, unsigned int size, int range) {
     std::vector<std::vector<int>> buckets;
@@ -551,6 +561,8 @@ void bucket_sort(int *arr, unsigned int size, int range) {
         }
         current_index += buckets[i].size();
     }
+	buckets.resize(0);
+	buckets.shrink_to_fit();
 }
 
 struct Data {
@@ -562,37 +574,129 @@ struct Data {
 int main()
 {
 	{
-		srand(time(NULL));
+		srand(0);
+		const int MAX_ORDER = 7;
+		const double m_double = (double)pow(2, 30);
 
-		DynamicArr<int> arr;
-		for (int i = 0; i < 10; i++) {
-			arr.add_element(rand() % 100);
-		}
-		std::cout << arr.display_array(100) << std::endl;
-		std::cout << "\n\n\n" << std::endl;
-		BinaryHeap<int> heap(arr, arr.size(), 1);
-		std::cout << heap.display(100) << std::endl;
-		std::cout << "\n\n\n" << std::endl;
-		heap.sort();
+		for (int o = 1; o <= MAX_ORDER; o++) {
+			std::cout << "===============================================" << std::endl;
+			std::cout << "                    TEST" << o << std::endl;
+			std::cout << "===============================================" << std::endl;
+			const int n = (int)pow(10, o);
 
+			double* arr1 = new double[n];
+			for (int i = 0; i < n; i++) {
+				arr1[i] = ((rand() << 15) + rand()) / m_double;
+			}
+			std::cout << "Nieposortowana tablica" << std::endl;
+			for (int i = 0; i < 10; i++) {
+				std::cout << arr1[i] << std::endl;
+			}
+
+			double* arr2 = new double[n];
+			std::memcpy(arr2, arr1, n * sizeof(double));
+			clock_t t1 = clock();
+			BinaryHeap<double> heap(arr1, n, 1);
+			heap.sort();
+			clock_t t2 = clock();
+			std::cout << "-----------------------------------------------" << std::endl;
+
+			std::cout << "Posortowana tablica(kopcowanie)" << std::endl;
+			std::cout << heap.display(10) << std::endl;
+			std::cout << "-----------------------------------------------" << std::endl;
+			double time = (t2 - t1) / (double)CLOCKS_PER_SEC;
+			std::cout << "Calkowity czas dodawania: " << time << std::endl;
+			std::cout << "Sredni czas dodawania: " << time / n << std::endl;
+			std::cout << "-----------------------------------------------" << std::endl;
+
+			t1 = clock();
+			bucket_sort(arr2, n, 1.0);
+			t2 = clock();
+			std::cout << "Posortowana tablica(kubelkowe)" << std::endl;
+			for (int i = 0; i < 10; i++) {
+				std::cout << arr2[i] << std::endl;
+			}
+			std::cout << "-----------------------------------------------" << std::endl;
+			time = (t2 - t1) / (double)CLOCKS_PER_SEC;
+			std::cout << "Calkowity czas dodawania: " << time << std::endl;
+			std::cout << "Sredni czas dodawania: " << time / n << std::endl;
+			std::cout << "-----------------------------------------------" << std::endl;
+			std::cout << "\n\n";
+
+			heap.clear();
+			delete[] arr1, arr2;
+		}		
 		return 0;
 	}
-    /*int n = 10;
-    srand(time(NULL));
-    double* test_arr = new double[n];
+	srand(0);
 
-    for (int i = 0; i < n; i++) {     
-		test_arr[i] = ((rand() << 15) + rand()) / ((double)pow(2, 30));
-        std::cout << test_arr[i] << std::endl;
-    }
-	std::cout << "\n\n\n" << std::endl;
-    bucket_sort(test_arr, 10, 1.0);
-    for (int i = 0; i < n; i++) {
-        std::cout << test_arr[i] << std::endl;
-    }
+	const int MAX_ORDER = 7;
+	const int m = (int)pow(10, 7);
 
+	for (int o = 1; o <= MAX_ORDER; o++) {
+		std::cout << "===============================================" << std::endl;
+		std::cout << "                    TEST" << o << std::endl;
+		std::cout << "===============================================" << std::endl;
+		const int n = (int)pow(10, o);
 
-    delete[] test_arr;
-    system("pause");*/
+		int* arr1 = new int[n];
+		for (int i = 0; i < n; i++) {
+			arr1[i] = rand() % 1000;
+		}
+		std::cout << "Nieposortowana tablica" << std::endl;
+		for (int i = 0; i < 10; i++) {
+			std::cout << arr1[i] << std::endl;
+		}
+		int* arr2 = new int[n];
+		int* arr3 = new int[n];
+		std::memcpy(arr2, arr1, n * sizeof(int));
+		std::memcpy(arr3, arr1, n * sizeof(int));
+		std::cout << "-----------------------------------------------" << std::endl;
+		clock_t t1 = clock();
+		counting_sort(arr1, n, m);
+		clock_t t2 = clock();
+
+		std::cout << "Posortowana tablica (zliczanie)" << std::endl;
+		for (int i = 0; i < 10; i++) {
+			std::cout << arr1[i] << std::endl;
+		}
+		std::cout << "-----------------------------------------------" << std::endl;
+		double time = (t2 - t1) / (double)CLOCKS_PER_SEC;
+		std::cout << "Calkowity czas dodawania: " << time << std::endl;
+		std::cout << "Sredni czas dodawania: " << time / n << std::endl;
+		std::cout << "-----------------------------------------------" << std::endl;
+
+		t1 = clock();
+		BinaryHeap<int> heap(arr2, n, 1);
+		heap.sort();
+		t2 = clock();
+		std::cout << "-----------------------------------------------" << std::endl;
+
+		std::cout << "Posortowana tablica(kopcowanie)" << std::endl;
+		std::cout << heap.display(10) << std::endl;
+		std::cout << "-----------------------------------------------" << std::endl;
+		time = (t2 - t1) / (double)CLOCKS_PER_SEC;
+		std::cout << "Calkowity czas dodawania: " << time << std::endl;
+		std::cout << "Sredni czas dodawania: " << time / n << std::endl;
+		std::cout << "-----------------------------------------------" << std::endl;
+
+		t1 = clock();
+		bucket_sort(arr3, n, m);
+		t2 = clock();
+		std::cout << "Posortowana tablica(kubelkowe)" << std::endl;
+		for (int i = 0; i < 10; i++) {
+			std::cout << arr3[i] << std::endl;
+		}
+		std::cout << "-----------------------------------------------" << std::endl;
+		time = (t2 - t1) / (double)CLOCKS_PER_SEC;
+		std::cout << "Calkowity czas dodawania: " << time << std::endl;
+		std::cout << "Sredni czas dodawania: " << time / n << std::endl;
+		std::cout << "-----------------------------------------------" << std::endl;
+		std::cout << "\n\n";
+
+		//heap.clear();
+		delete[] arr1, arr2, arr3;
+	}
+	system("pause");
 }
 
